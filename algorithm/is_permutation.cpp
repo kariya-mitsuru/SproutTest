@@ -5,11 +5,22 @@
   Distributed under the Boost Software License, Version 1.0. (See accompanying
   file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 =============================================================================*/
-#include <sprout/algorithm/is_permutation_new.hpp>
+#include <sprout/algorithm/is_permutation.hpp>
 #include <sprout/array.hpp>
 #include <sprout/container.hpp>
 #include <testspr/tools.hpp>
 #include <algorithm>
+
+template<typename Iterator>
+using identity = Iterator;
+template<typename Iterator>
+using input = testspr::reduct_iterator<Iterator, std::input_iterator_tag>;
+template<typename Iterator>
+using forward = testspr::reduct_iterator<Iterator, std::forward_iterator_tag>;
+template<typename Iterator>
+using bidirectional = testspr::reduct_iterator<Iterator, std::bidirectional_iterator_tag>;
+template<typename Iterator>
+using random_access = testspr::reduct_iterator<Iterator, std::random_access_iterator_tag>;
 
 int count;
 
@@ -18,106 +29,41 @@ struct eq {
 	bool operator()(T const& t, U const& u) const { ++count; return t == u; }
 };
 
+template<
+	template<typename> class Reducer, typename C1, typename C2, typename BinaryPredicate = eq,
+	typename ForwardIterator1 = Reducer<typename C1::iterator>,
+	typename ForwardIterator2 = Reducer<typename C2::iterator>
+	>
+inline void check_reduced(bool (*is_permutation)(ForwardIterator1, ForwardIterator1, ForwardIterator2, BinaryPredicate), bool expect, C1 c1, C2 c2, int len)
+{
+	count = 0;
+	auto result = is_permutation(
+		Reducer<typename C1::iterator>(sprout::begin(c1)),
+		Reducer<typename C1::iterator>(len == 0 ? sprout::end(c1) : sprout::begin(c1) + len),
+		Reducer<typename C2::iterator>(sprout::begin(c2)),
+		eq()
+		);
+	if (expect == result) {
+		std::cout << "Count: " << count << std::endl;
+	} else {
+		std::cout << "Expect: " << expect << ", Result: " << result << ", count: " << count << std::endl;
+	}
+}
+
 template<typename C1, typename C2>
-void check3(bool expect, C1 c1, C2 c2, int len = 0)
+inline void check3(bool expect, C1 c1, C2 c2, int len = 0)
 {
 	std::cout << std::boolalpha;
-	{
-		count = 0;
-		auto result = sprout::is_permutation(
-			sprout::begin(c1),
-			len == 0 ? sprout::end(c1) : sprout::begin(c1) + len,
-			sprout::begin(c2),
-			eq()
-			);
-		if (expect == result) {
-			std::cout << "Count: " << count << std::endl;
-		} else {
-			std::cout << "Expect: " << expect << ", Result: " << result << ", count: " << count << std::endl;
-		}
-	}
-
-	{
-		count = 0;
-		auto result = sprout::is_permutation(
-			testspr::reduct_forward(sprout::begin(c1)),
-			testspr::reduct_forward(len == 0 ? sprout::end(c1) : sprout::begin(c1) + len),
-			testspr::reduct_forward(sprout::begin(c2)),
-			eq()
-			);
-		if (expect == result) {
-			std::cout << "Count: " << count << std::endl;
-		} else {
-			std::cout << "Expect: " << expect << ", Result: " << result << ", count: " << count << std::endl;
-		}
-	}
-
-	{
-		count = 0;
-		auto result = sprout::is_permutation(
-			testspr::reduct_random_access(sprout::begin(c1)),
-			testspr::reduct_random_access(len == 0 ? sprout::end(c1) : sprout::begin(c1) + len),
-			testspr::reduct_random_access(sprout::begin(c2)),
-			eq()
-			);
-		if (expect == result) {
-			std::cout << "Count: " << count << std::endl;
-		} else {
-			std::cout << "Expect: " << expect << ", Result: " << result << ", count: " << count << std::endl;
-		}
-	}
-
-	{
-		count = 0;
-		auto result = std::is_permutation(
-			sprout::begin(c1),
-			len == 0 ? sprout::end(c1) : sprout::begin(c1) + len,
-			sprout::begin(c2),
-			eq()
-			);
-		if (expect == result) {
-			std::cout << "Count: " << count << std::endl;
-		} else {
-			std::cout << "Expect: " << expect << ", Result: " << result << ", count: " << count << std::endl;
-		}
-	}
-#if 0
-	{
-		count = 0;
-		auto result = std::is_permutation(
-			testspr::reduct_forward(sprout::begin(c1)),
-			testspr::reduct_forward(len == 0 ? sprout::end(c1) : sprout::begin(c1) + len),
-			testspr::reduct_forward(sprout::begin(c2)),
-			eq()
-			);
-		if (expect == result) {
-			std::cout << "Count: " << count << std::endl;
-		} else {
-			std::cout << "Expect: " << expect << ", Result: " << result << ", count: " << count << std::endl;
-		}
-	}
-
-	{
-		count = 0;
-		auto result = std::is_permutation(
-			testspr::reduct_random_access(sprout::begin(c1)),
-			testspr::reduct_random_access(len == 0 ? sprout::end(c1) : sprout::begin(c1) + len),
-			testspr::reduct_random_access(sprout::begin(c2)),
-			eq()
-			);
-		if (expect == result) {
-			std::cout << "Count: " << count << std::endl;
-		} else {
-			std::cout << "Expect: " << expect << ", Result: " << result << ", count: " << count << std::endl;
-		}
-	}
-#endif
+	check_reduced<identity>(sprout::is_permutation, expect, c1, c2, len);
+	check_reduced<forward>(sprout::is_permutation, expect, c1, c2, len);
+	check_reduced<random_access>(sprout::is_permutation, expect, c1, c2, len);
+	check_reduced<identity>(std::is_permutation, expect, c1, c2, len);
+	//check_reduced<forward>(std::is_permutation, expect, c1, c2, len);
+	//check_reduced<random_access>(std::is_permutation, expect, c1, c2, len);
 
 	std::cout << std::endl;
 }
 
-#undef SPROUT_STATIC_CONSTEXPR
-#define SPROUT_STATIC_CONSTEXPR
 SPROUT_STATIC_CONSTEXPR auto arr1 = sprout::make_common_array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 SPROUT_STATIC_CONSTEXPR auto arr2 = sprout::make_common_array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 9, 8, 1, 2, 3, 4, 5, 6, 7);
 SPROUT_STATIC_CONSTEXPR auto arr3 = sprout::make_common_array(5, 4, 3, 2, 1, 11, 10, 9, 8, 7, 5, 4, 3, 2, 1, 11, 10, 9, 8, 7);
@@ -132,47 +78,4 @@ int main()
 	check3(true, arr1, arr3, 5);
 	check3(false, arr1, arr2, 15);
 	check3(true, arr4, arr5);
-
-	//count = 0;
-	//sprout::mismatch(sprout::begin(arr1), sprout::end(arr1), sprout::begin(arr3), eq());
-	//std::cout << "Count: " << count << std::endl;
-
-#if 0
-{
-	SPROUT_STATIC_CONSTEXPR auto result = sprout::is_permutation(
-		sprout::begin(arr1),
-		sprout::end(arr1),
-		sprout::begin(arr2),
-		sprout::end(arr2)
-		);
-	TESTSPR_BOTH_ASSERT(result);
-}
-{
-	SPROUT_STATIC_CONSTEXPR auto result = sprout::is_permutation(
-		sprout::begin(arr1),
-		sprout::end(arr1),
-		sprout::begin(arr3),
-		sprout::end(arr3)
-		);
-	TESTSPR_BOTH_ASSERT(!result);
-}
-{
-	SPROUT_STATIC_CONSTEXPR auto result = sprout::is_permutation(
-		sprout::begin(arr1),
-		sprout::begin(arr1) + 5,
-		sprout::begin(arr2),
-		sprout::end(arr2) + 5
-		);
-	TESTSPR_BOTH_ASSERT(!result);
-}
-{
-	SPROUT_STATIC_CONSTEXPR auto result = sprout::is_permutation(
-		sprout::begin(arr1),
-		sprout::begin(arr1) + 5,
-		sprout::begin(arr3),
-		sprout::begin(arr3) + 5
-		);
-	TESTSPR_BOTH_ASSERT(result);
-}
-#endif
 }
