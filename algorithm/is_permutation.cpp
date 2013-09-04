@@ -10,6 +10,7 @@
 #include <sprout/container.hpp>
 #include <testspr/tools.hpp>
 #include <algorithm>
+#include <sprout/iterator.hpp>
 
 template<typename Iterator>
 using identity = Iterator;
@@ -21,6 +22,8 @@ template<typename Iterator>
 using bidirectional = testspr::reduct_iterator<Iterator, std::bidirectional_iterator_tag>;
 template<typename Iterator>
 using random_access = testspr::reduct_iterator<Iterator, std::random_access_iterator_tag>;
+
+using sprout::swap;
 
 int count;
 
@@ -59,7 +62,7 @@ inline void check3(bool expect, C1 c1, C2 c2, int len = 0)
 	check_reduced<random_access>(sprout::is_permutation, expect, c1, c2, len);
 	check_reduced<identity>(std::is_permutation, expect, c1, c2, len);
 	//check_reduced<forward>(std::is_permutation, expect, c1, c2, len);
-	//check_reduced<random_access>(std::is_permutation, expect, c1, c2, len);
+	check_reduced<random_access>(std::is_permutation, expect, c1, c2, len);
 
 	std::cout << std::endl;
 }
