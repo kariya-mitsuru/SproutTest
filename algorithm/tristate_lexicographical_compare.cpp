@@ -5,68 +5,88 @@
 
 #include <testspr/iterator.hpp>
 
-SPROUT_STATIC_CONSTEXPR auto input1 = sprout::make_common_array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-SPROUT_STATIC_CONSTEXPR auto input2 = sprout::make_common_array(1, 2, 3, 4, 5, 6, 7, 11, 12, 13);
-SPROUT_STATIC_CONSTEXPR auto input3 = sprout::make_common_array(1, 2, 3, 4, 5, 6, 7);
+template<typename Iterator>
+using identity = Iterator;
+template<typename Iterator>
+using input = testspr::reduct_iterator<Iterator, std::input_iterator_tag>;
+template<typename Iterator>
+using forward = testspr::reduct_iterator<Iterator, std::forward_iterator_tag>;
+template<typename Iterator>
+using bidirectional = testspr::reduct_iterator<Iterator, std::bidirectional_iterator_tag>;
+template<typename Iterator>
+using random_access = testspr::reduct_iterator<Iterator, std::random_access_iterator_tag>;
 
-template<typename T>
 struct less {
-	static int count;
-	less() { count = 0; }
-	bool operator()(T const& t1, T const& t2) const {
-		++count;
-		return t1 < t2;
-	}
+	less(int& count) : count(count) {}
+	template<typename T, typename U>
+	bool operator()(T const& t, U const& u) const { ++count; return t < u; }
+	int& count;
 };
 
-template<>
-int less<int>::count = 0;
+template<typename T>
+void print(T expect, T result, int count)
+{
+	if (expect == result) {
+		std::cout << "Success:";
+	} else {
+		std::cout << "Failure: " << " exptected = " << expect << ",";
+	}
+	std::cout << " result = " << result << ", count = " << count << std::endl;
+}
+
+template<template<typename> class Reducer, typename C1, typename C2>
+void check_reduced(C1 c1, C2 c2, int expect)
+{
+	int count = 0;
+	auto result = sprout::tristate_lexicographical_compare(
+		Reducer<typename C1::iterator>(sprout::begin(c1)),
+		Reducer<typename C1::iterator>(sprout::end(c1)),
+		Reducer<typename C2::iterator>(sprout::begin(c2)),
+		Reducer<typename C2::iterator>(sprout::end(c2)),
+		less(count)
+		);
+	print(expect, result, count);
+}
+
+template<template<typename> class Reducer, typename C1, typename T1, typename C2, typename T2>
+void check_reduced(C1 c1, T1 const& delim1, C2 c2, T2 const& delim2, int expect)
+{
+	int count = 0;
+	auto result = sprout::tristate_lexicographical_compare(
+		Reducer<typename C1::iterator>(sprout::begin(c1)),
+		Reducer<typename C1::iterator>(sprout::end(c1)),
+		delim1,
+		Reducer<typename C2::iterator>(sprout::begin(c2)),
+		Reducer<typename C2::iterator>(sprout::end(c2)),
+		delim2,
+		less(count)
+		);
+	print(expect, result, count);
+}
 
 template<typename C1, typename C2>
-void check(C1 const& c1, C2 const& c2, int expect)
+inline void check(C1 c1, C2 c2, int expect)
 {
-	{
-		auto comp = less<int>();
-		auto result = sprout::tristate_lexicographical_compare(sprout::begin(c1), sprout::end(c1), sprout::begin(c2), sprout::end(c2), comp);
-		if (expect == result) {
-			std::cout << "Success: " << result << ", count = " << less<int>::count << std::endl;
-		} else {
-			std::cout << "Failure: " << " exptected: " << expect << ", result: " << result << ", count = " << less<int>::count << std::endl;
-		}
-	}
-	{
-		auto comp = less<int>();
-		auto result = sprout::tristate_lexicographical_compare(testspr::reduct_input(sprout::begin(c1)), testspr::reduct_input(sprout::end(c1)), testspr::reduct_input(sprout::begin(c2)), testspr::reduct_input(sprout::end(c2)), comp);
-		if (expect == result) {
-			std::cout << "Success: " << result << ", count = " << less<int>::count << std::endl;
-		} else {
-			std::cout << "Failure: " << " exptected: " << expect << ", result: " << result << ", count = " << less<int>::count << std::endl;
-		}
-	}
+	check_reduced<identity>(c1, c2, expect);
+	check_reduced<forward>(c1, c2, expect);
+	check_reduced<random_access>(c1, c2, expect);
+
+	std::cout << std::endl;
 }
 
 template<typename C1, typename T1, typename C2, typename T2>
-void check(C1 const& c1, T1 const& delim1, C2 const& c2, T2 const& delim2, int expect)
+inline void check(C1 c1, T1 const& delim1, C2 c2, T2 const& delim2, int expect)
 {
-	{
-		auto comp = less<int>();
-		auto result = sprout::tristate_lexicographical_compare(sprout::begin(c1), sprout::end(c1), delim1, sprout::begin(c2), sprout::end(c2), delim2, comp);
-		if (expect == result) {
-			std::cout << "Success: " << result << ", count = " << less<int>::count << std::endl;
-		} else {
-			std::cout << "Failure: " << " exptected: " << expect << ", result: " << result << ", count = " << less<int>::count << std::endl;
-		}
-	}
-	{
-		auto comp = less<int>();
-		auto result = sprout::tristate_lexicographical_compare(testspr::reduct_input(sprout::begin(c1)), testspr::reduct_input(sprout::end(c1)), delim1, testspr::reduct_input(sprout::begin(c2)), testspr::reduct_input(sprout::end(c2)), delim2, comp);
-		if (expect == result) {
-			std::cout << "Success: " << result << ", count = " << less<int>::count << std::endl;
-		} else {
-			std::cout << "Failure: " << " exptected: " << expect << ", result: " << result << ", count = " << less<int>::count << std::endl;
-		}
-	}
+	check_reduced<identity>(c1, delim1, c2, delim2, expect);
+	check_reduced<forward>(c1, delim1, c2, delim2, expect);
+	check_reduced<random_access>(c1, delim1, c2, delim2, expect);
+
+	std::cout << std::endl;
 }
+
+SPROUT_STATIC_CONSTEXPR auto input1 = sprout::make_common_array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+SPROUT_STATIC_CONSTEXPR auto input2 = sprout::make_common_array(1, 2, 3, 4, 5, 6, 7, 11, 12, 13);
+SPROUT_STATIC_CONSTEXPR auto input3 = sprout::make_common_array(1, 2, 3, 4, 5, 6, 7);
 
 int main()
 {
