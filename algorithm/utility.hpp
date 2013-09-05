@@ -3,6 +3,10 @@
 
 #pragma once
 
+#include <iostream>
+
+#include <testspr/iterator.hpp>
+
 template<typename Iterator>
 using identity = Iterator;
 template<typename Iterator>
