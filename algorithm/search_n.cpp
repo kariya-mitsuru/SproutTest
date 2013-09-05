@@ -16,32 +16,36 @@
 
 template<
 	template<typename> class Reducer, typename C, typename Size, typename T, typename BinaryPredicate = equal_to,
-	typename ForwardIterator = Reducer<typename C::iterator>
+	typename ForwardIterator = Reducer<typename C::iterator>, typename Difference = typename C::difference_type
 	>
-inline void check_reduced(ForwardIterator (*search_n)(ForwardIterator, ForwardIterator, Size, T, BinaryPredicate), Size expect, C c, Size size, T const& value, int len)
+//inline void check_reduced(ForwardIterator (*search_n)(ForwardIterator, ForwardIterator, Size, T, BinaryPredicate), Size expect, C c, Size size, T const& value, int len)
+inline void check_reduced(Difference expect, C c, Size size, T const& value, int len)
 {
 	int count = 0;
-	auto result = search_n(
+	auto result = sprout::search_n(
 		Reducer<typename C::iterator>(sprout::begin(c)),
 		Reducer<typename C::iterator>(len == 0 ? sprout::end(c) : sprout::begin(c) + len),
 		size,
 		value,
 		equal_to(count)
 		);
-	print(Reducer<typename C::iterator>(sprout::next(sprout::begin(c), expect)), result, count);
+	print(expect, sprout::distance(Reducer<typename C::iterator>(sprout::begin(c)), result), count);
 }
 
-template<typename C, typename Size, typename T>
-inline void check(Size expect, C c, Size size, T const& value, int len = 0)
+template<typename C, typename T, typename Size, typename Difference = typename C::difference_type>
+inline void check(Difference expect, C c, Size size, T const& value, int len = 0)
 {
 	std::cout << std::boolalpha;
 
-	check_reduced<identity>(sprout::search_n, expect, c, size, value, len);
-	check_reduced<forward>(sprout::search_n, expect, c, size, value, len);
-	check_reduced<random_access>(sprout::search_n, expect, c, size, value, len);
-	check_reduced<identity>(std::search_n, expect, c, size, value, len);
-	check_reduced<forward>(std::search_n, expect, c, size, value, len);
-	check_reduced<random_access>(std::search_n, expect, c, size, value, len);
+	check_reduced<identity>(expect, c, size, value, len);
+	check_reduced<forward>(expect, c, size, value, len);
+	check_reduced<random_access>(expect, c, size, value, len);
+	//check_reduced<identity, C, Size, T>(sprout::search_n, expect, c, size, value, len);
+	//check_reduced<forward, C, Size, T>(sprout::search_n, expect, c, size, value, len);
+	//check_reduced<random_access, C, Size, T>(sprout::search_n, expect, c, size, value, len);
+	//check_reduced<identity, C, Size, T>(std::search_n, expect, c, size, value, len);
+	//check_reduced<forward, C, Size, T>(std::search_n, expect, c, size, value, len);
+	//check_reduced<random_access, C, Size, T>(std::search_n, expect, c, size, value, len);
 
 	std::cout << std::endl;
 }
