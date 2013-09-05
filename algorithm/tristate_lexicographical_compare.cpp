@@ -5,34 +5,7 @@
 
 #include <testspr/iterator.hpp>
 
-template<typename Iterator>
-using identity = Iterator;
-template<typename Iterator>
-using input = testspr::reduct_iterator<Iterator, std::input_iterator_tag>;
-template<typename Iterator>
-using forward = testspr::reduct_iterator<Iterator, std::forward_iterator_tag>;
-template<typename Iterator>
-using bidirectional = testspr::reduct_iterator<Iterator, std::bidirectional_iterator_tag>;
-template<typename Iterator>
-using random_access = testspr::reduct_iterator<Iterator, std::random_access_iterator_tag>;
-
-struct less {
-	less(int& count) : count(count) {}
-	template<typename T, typename U>
-	bool operator()(T const& t, U const& u) const { ++count; return t < u; }
-	int& count;
-};
-
-template<typename T>
-void print(T expect, T result, int count)
-{
-	if (expect == result) {
-		std::cout << "Success:";
-	} else {
-		std::cout << "Failure: " << " exptected = " << expect << ",";
-	}
-	std::cout << " result = " << result << ", count = " << count << std::endl;
-}
+#include "utility.hpp"
 
 template<template<typename> class Reducer, typename C1, typename C2>
 void check_reduced(C1 c1, C2 c2, int expect)

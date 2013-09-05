@@ -13,45 +13,41 @@
 #include <sprout/iterator.hpp>
 #include <vector>
 
-template<typename Iterator>
-using identity = Iterator;
-template<typename Iterator>
-using input = testspr::reduct_iterator<Iterator, std::input_iterator_tag>;
-template<typename Iterator>
-using forward = testspr::reduct_iterator<Iterator, std::forward_iterator_tag>;
-template<typename Iterator>
-using bidirectional = testspr::reduct_iterator<Iterator, std::bidirectional_iterator_tag>;
-template<typename Iterator>
-using random_access = testspr::reduct_iterator<Iterator, std::random_access_iterator_tag>;
-
-
-struct eq {
-	eq(int& count) : count(count) {}
-	template<typename T, typename U>
-	bool operator()(T const& t, U const& u) const { ++count; return t == u; }
-	int& count;
-};
+#include "utility.hpp"
 
 template<
-	template<typename> class Reducer, typename C1, typename C2, typename BinaryPredicate = eq,
+	template<typename> class Reducer, typename C1, typename C2, typename BinaryPredicate = equal_to,
 	typename ForwardIterator1 = Reducer<typename C1::iterator>,
 	typename ForwardIterator2 = Reducer<typename C2::iterator>
 	>
 inline void check_reduced(bool (*is_permutation)(ForwardIterator1, ForwardIterator1, ForwardIterator2, BinaryPredicate), bool expect, C1 c1, C2 c2, int len)
 {
 	int count = 0;
-	eq pred(count);
 	auto result = is_permutation(
 		Reducer<typename C1::iterator>(sprout::begin(c1)),
 		Reducer<typename C1::iterator>(len == 0 ? sprout::end(c1) : sprout::begin(c1) + len),
 		Reducer<typename C2::iterator>(sprout::begin(c2)),
-		pred
+		equal_to(count)
 		);
-	if (expect == result) {
-		std::cout << "Count: " << pred.count << std::endl;
-	} else {
-		std::cout << "Expect: " << expect << ", Result: " << result << ", count: " << pred.count << std::endl;
-	}
+	print(expect, result, count);
+}
+
+template<
+	template<typename> class Reducer, typename C1, typename C2, typename BinaryPredicate = equal_to,
+	typename ForwardIterator1 = Reducer<typename C1::iterator>,
+	typename ForwardIterator2 = Reducer<typename C2::iterator>
+	>
+inline void check_reduced(bool (*is_permutation)(ForwardIterator1, ForwardIterator1, ForwardIterator2, BinaryPredicate), bool expect, C1 c1, C2 c2, int len1, int len2)
+{
+	int count = 0;
+	auto result = is_permutation(
+		Reducer<typename C1::iterator>(sprout::begin(c1)),
+		Reducer<typename C1::iterator>(len1 == 0 ? sprout::end(c1) : sprout::begin(c1) + len1),
+		Reducer<typename C2::iterator>(sprout::begin(c2)),
+		Reducer<typename C2::iterator>(len2 == 0 ? sprout::end(c2) : sprout::begin(c2) + len2),
+		equal_to(count)
+		);
+	print(expect, result, count);
 }
 
 template<typename C1, typename C2>
@@ -65,6 +61,21 @@ inline void check3(bool expect, C1 c1, C2 c2, int len = 0)
 	check_reduced<identity>(std::is_permutation, expect, c1, c2, len);
 	check_reduced<forward>(std::is_permutation, expect, c1, c2, len);
 	check_reduced<random_access>(std::is_permutation, expect, c1, c2, len);
+
+	std::cout << std::endl;
+}
+
+template<typename C1, typename C2>
+inline void check4(bool expect, C1 c1, C2 c2, int len1 = 0, int len2 = 0)
+{
+	std::cout << std::boolalpha;
+
+	check_reduced<identity>(sprout::is_permutation, expect, c1, c2, len1, len2);
+	check_reduced<forward>(sprout::is_permutation, expect, c1, c2, len1, len2);
+	check_reduced<random_access>(sprout::is_permutation, expect, c1, c2, len1, len2);
+	check_reduced<identity>(std::is_permutation, expect, c1, c2, len1, len2);
+	check_reduced<forward>(std::is_permutation, expect, c1, c2, len1, len2);
+	check_reduced<random_access>(std::is_permutation, expect, c1, c2, len1, len2);
 
 	std::cout << std::endl;
 }
@@ -84,4 +95,12 @@ int main()
 	check3(true, arr1, arr3, 5);
 	check3(false, arr1, arr2, 15);
 	check3(true, arr4, arr5);
+
+	check4(true, std::vector<int>({1, 2, 3, 4, 5}), std::vector<int>({1, 2, 3, 4, 5}));
+	check4(true, arr1, arr2);
+	check4(false, arr1, arr3);
+	check4(true, arr1, arr2, 5);
+	check4(true, arr1, arr3, 5);
+	check4(false, arr1, arr2, 15);
+	check4(true, arr4, arr5);
 }
