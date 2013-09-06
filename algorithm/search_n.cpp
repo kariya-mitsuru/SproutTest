@@ -14,12 +14,9 @@
 
 #include "utility.hpp"
 
-template<
-	template<typename> class Reducer, typename C, typename Size, typename T, typename BinaryPredicate = equal_to,
-	typename ForwardIterator = Reducer<typename C::iterator>, typename Difference = typename C::difference_type
-	>
-//inline void check_reduced(ForwardIterator (*search_n)(ForwardIterator, ForwardIterator, Size, T, BinaryPredicate), Size expect, C c, Size size, T const& value, int len)
-inline void check_reduced(Difference expect, C c, Size size, T const& value, int len)
+template<template<typename> class Reducer, typename C, typename Size, typename T>
+//inline void check_reduced(Reducer<typename C::iterator> (*search_n)(Reducer<typename C::iterator>, Reducer<typename C::iterator>, Size, T, equal_to), typename C::difference_type expect, C c, Size size, T const& value, int len)
+inline void check_reduced(typename C::difference_type expect, C c, Size size, T const& value, int len)
 {
 	int count = 0;
 	auto result = sprout::search_n(
@@ -32,8 +29,23 @@ inline void check_reduced(Difference expect, C c, Size size, T const& value, int
 	print(expect, sprout::distance(Reducer<typename C::iterator>(sprout::begin(c)), result), count);
 }
 
-template<typename C, typename T, typename Size, typename Difference = typename C::difference_type>
-inline void check(Difference expect, C c, Size size, T const& value, int len = 0)
+template<template<typename> class Reducer, typename C, typename Size, typename T>
+//inline void check_reduced(Reducer<typename C::iterator> (*search_n)(Reducer<typename C::iterator>, Reducer<typename C::iterator>, Size, T, equal_to), typename C::difference_type expect, C c, Size size, T const& value, int len)
+inline void check_reduced_std(typename C::difference_type expect, C c, Size size, T const& value, int len)
+{
+	int count = 0;
+	auto result = std::search_n(
+		Reducer<typename C::iterator>(sprout::begin(c)),
+		Reducer<typename C::iterator>(len == 0 ? sprout::end(c) : sprout::begin(c) + len),
+		size,
+		value,
+		equal_to(count)
+		);
+	print(expect, sprout::distance(Reducer<typename C::iterator>(sprout::begin(c)), result), count);
+}
+
+template<typename C, typename T, typename Size>
+inline void check(typename C::difference_type expect, C c, Size size, T const& value, int len = 0)
 {
 	std::cout << std::boolalpha;
 
@@ -43,6 +55,9 @@ inline void check(Difference expect, C c, Size size, T const& value, int len = 0
 	//check_reduced<identity, C, Size, T>(sprout::search_n, expect, c, size, value, len);
 	//check_reduced<forward, C, Size, T>(sprout::search_n, expect, c, size, value, len);
 	//check_reduced<random_access, C, Size, T>(sprout::search_n, expect, c, size, value, len);
+	check_reduced_std<identity>(expect, c, size, value, len);
+	check_reduced_std<forward>(expect, c, size, value, len);
+	check_reduced_std<random_access>(expect, c, size, value, len);
 	//check_reduced<identity, C, Size, T>(std::search_n, expect, c, size, value, len);
 	//check_reduced<forward, C, Size, T>(std::search_n, expect, c, size, value, len);
 	//check_reduced<random_access, C, Size, T>(std::search_n, expect, c, size, value, len);
@@ -51,8 +66,10 @@ inline void check(Difference expect, C c, Size size, T const& value, int len = 0
 }
 
 SPROUT_STATIC_CONSTEXPR auto arr1 = sprout::make_common_array(1, 2, 1, 4, 1, 6, 1, 8, 1, 10, 1, 2, 1, 4, 1, 6, 1, 8, 1, 10);
+SPROUT_STATIC_CONSTEXPR auto arr2 = sprout::make_common_array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1);
 
 int main()
 {
 	check(20, arr1, 2, 1);
+	check(20, arr2, 11, 1);
 }
